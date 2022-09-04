@@ -2,7 +2,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
 from users.models import User
 from users.paginators import PageLimitPagination
 from users.serializers import (PasswordSerializer, UserSerializer,
@@ -32,19 +31,10 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=[permissions.IsAuthenticated])
     def set_password(self, request):
         user = request.user
-        serializer = PasswordSerializer(data=request.data)
+        serializer = PasswordSerializer(data=request.data,
+                                        context={'request': request})
         if serializer.is_valid():
-            old_password = serializer.validated_data.get("old_password")
-            new_password = serializer.validated_data.get('new_password')
-            if not user.check_password(old_password):
-                return Response(
-                    {"old_password": ["Неверно указан старый пароль."]},
-                    status=status.HTTP_400_BAD_REQUEST)
-            if old_password == new_password:
-                return Response(
-                    {"new_password": ["Новый пароль совпадает со старым."]},
-                    status=status.HTTP_400_BAD_REQUEST)
-            user.set_password(new_password)
+            user.set_password(serializer.validated_data.get('new_password'))
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:

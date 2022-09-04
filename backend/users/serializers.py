@@ -1,6 +1,5 @@
-from rest_framework import serializers
-
 from recipes.models import Recipe
+from rest_framework import serializers
 from users.models import User
 
 
@@ -44,6 +43,19 @@ class PasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('old_password', 'new_password')
+
+    def validate(self, data):
+        old_password = self.initial_data.get('old_password')
+        new_password = self.initial_data.get('new_password')
+        user = self.context.get('request').user
+
+        if not user.check_password(old_password):
+            raise serializers.ValidationError(
+                {"old_password": ["Неверно указан старый пароль."]})
+        if old_password == new_password:
+            raise serializers.ValidationError(
+                {"new_password": ["Новый пароль совпадает со старым."]})
+        return data
 
 
 class UserSubscribeSerializer(UserSerializer):

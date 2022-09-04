@@ -1,7 +1,6 @@
 from django_filters.rest_framework import FilterSet, filters
-from rest_framework.filters import SearchFilter
-
 from recipes.models import Recipe
+from rest_framework.filters import SearchFilter
 
 
 class IngredientSearchFilter(SearchFilter):
@@ -23,8 +22,6 @@ class RecipeFilters(FilterSet):
 
     def get_is_favorited(self, queryset, name, value):
         if value:
-            print(value)
-            print(name)
             return queryset.filter(favorite=self.request.user.id)
         return queryset
 

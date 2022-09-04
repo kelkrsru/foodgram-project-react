@@ -1,7 +1,6 @@
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import serializers
-
 from recipes.models import Ingredient, IngredientAmount, Recipe, Tag
+from rest_framework import serializers
 from users.serializers import UserSerializer
 
 
@@ -79,6 +78,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         name = str(self.initial_data.get('name')).strip()
         tags = self.initial_data.get('tags')
         ingredients = self.initial_data.get('ingredients')
+        author = self.context.get('request').user
 
         if not tags:
             raise serializers.ValidationError({
@@ -106,43 +106,5 @@ class RecipeSerializer(serializers.ModelSerializer):
         data['name'] = name.capitalize()
         data['tags'] = tags
         data['ingredients'] = valid_ingredients
-        data['author'] = self.context.get('request').user
+        data['author'] = author
         return data
-
-    @staticmethod
-    def create_ingredients(ingredients, recipe):
-        for ingredient in ingredients:
-            IngredientAmount.objects.create(
-                recipe=recipe, ingredient_id=ingredient.get('id'),
-                amount=ingredient.get('amount')
-            )
-
-    def create(self, validated_data):
-        image = validated_data.pop('image')
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(image=image, **validated_data)
-        recipe.tags.set(tags)
-        self.create_ingredients(ingredients, recipe)
-        return recipe
-
-    def update(self, recipe, validated_data):
-        tags = validated_data.get('tags')
-        ingredients = validated_data.get('ingredients')
-
-        recipe.image = validated_data.get('image', recipe.image)
-        recipe.name = validated_data.get('name', recipe.name)
-        recipe.text = validated_data.get('text', recipe.text)
-        recipe.cooking_time = validated_data.get(
-            'cooking_time', recipe.cooking_time)
-
-        if tags:
-            recipe.tags.clear()
-            recipe.tags.set(tags)
-
-        if ingredients:
-            recipe.ingredients.clear()
-            self.create_ingredients(ingredients, recipe)
-
-        recipe.save()
-        return recipe

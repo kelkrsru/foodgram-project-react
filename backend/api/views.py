@@ -1,16 +1,16 @@
-from django.db.models import F, Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import permissions, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-
 from api.filters import IngredientSearchFilter, RecipeFilters
 from api.permissions import AdminOrReadOnly, AuthorOrReadOnly
 from api.serializers import (IngredientSerializer, RecipeSerializer,
                              TagSerializer)
+from django.db.models import F, Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import Ingredient, IngredientAmount, Recipe, Tag
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 from users.models import User
 from users.paginators import PageLimitPagination
 from users.serializers import ShortRecipeSerializer
@@ -43,6 +43,33 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilters
     pagination_class = PageLimitPagination
     http_method_names = ['get', 'post', 'patch', 'delete']
+
+    @staticmethod
+    def create_ingredients(ingredients, recipe):
+        for ingredient in ingredients:
+            IngredientAmount.objects.create(
+                recipe=recipe, ingredient_id=ingredient.get('id'),
+                amount=ingredient.get('amount')
+            )
+
+    def perform_create(self, serializer):
+        name = serializer.validated_data.get('name')
+        if Recipe.objects.filter(name=name, author=self.request.user).exists():
+            raise ValidationError({
+                'name': 'Рецепт с данным именем и автором уже существует',
+                'author': 'Рецепт с данным именем и автором уже существует'
+            })
+        image = serializer.validated_data.pop('image')
+        ingredients = serializer.validated_data.pop('ingredients')
+        recipe = serializer.save(image=image)
+        self.create_ingredients(ingredients, recipe)
+
+    def perform_update(self, serializer):
+        ingredients = serializer.validated_data.pop('ingredients')
+        recipe = serializer.save()
+        recipe.ingredients.clear()
+        self.create_ingredients(ingredients, recipe)
+        recipe.save()
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated],
@@ -101,7 +128,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = self.request.user
         if not user.user_cart.exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Список покупок пуст.'},
+                            status=status.HTTP_400_BAD_REQUEST)
         ingredients = IngredientAmount.objects.filter(
             recipe__in=(user.user_cart.values('id'))
         ).values(
