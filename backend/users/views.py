@@ -27,6 +27,12 @@ class UserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_405_METHOD_NOT_ALLOWED
         )
 
+    def perform_create(self, serializer):
+        password = serializer.validated_data.get('password')
+        user = serializer.save()
+        user.set_password(password)
+        user.save()
+
     @action(detail=False, methods=['post'],
             permission_classes=[permissions.IsAuthenticated])
     def set_password(self, request):

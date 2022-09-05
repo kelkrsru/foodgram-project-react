@@ -37,22 +37,22 @@ class UserSerializer(serializers.ModelSerializer):
 
 class PasswordSerializer(serializers.ModelSerializer):
     """Serializer for password change endpoint."""
-    old_password = serializers.CharField(required=True, write_only=True)
+    current_password = serializers.CharField(required=True, write_only=True)
     new_password = serializers.CharField(required=True, write_only=True)
 
     class Meta:
         model = User
-        fields = ('old_password', 'new_password')
+        fields = ('current_password', 'new_password')
 
     def validate(self, data):
-        old_password = self.initial_data.get('old_password')
+        current_password = self.initial_data.get('current_password')
         new_password = self.initial_data.get('new_password')
         user = self.context.get('request').user
 
-        if not user.check_password(old_password):
+        if not user.check_password(current_password):
             raise serializers.ValidationError(
-                {"old_password": ["Неверно указан старый пароль."]})
-        if old_password == new_password:
+                {"current_password": ["Неверно указан старый пароль."]})
+        if current_password == new_password:
             raise serializers.ValidationError(
                 {"new_password": ["Новый пароль совпадает со старым."]})
         return data

@@ -79,7 +79,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe_id = int(pk)
         recipe = get_object_or_404(Recipe, pk=recipe_id)
         if request.method == 'POST':
-            if User.objects.filter(favorites=recipe_id).exists():
+            if User.objects.filter(favorites=recipe_id, id=user.id).exists():
                 return Response(
                     {'errors': 'Этот рецепт уже в избранном.'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -89,7 +89,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            if User.objects.filter(favorites=recipe_id).exists():
+            if User.objects.filter(favorites=recipe_id, id=user.id).exists():
                 user.favorites.remove(recipe)
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response({'errors': 'Этого рецепта нет в избранном.'},
@@ -105,7 +105,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe_id = int(pk)
         recipe = get_object_or_404(Recipe, pk=recipe_id)
         if request.method == 'POST':
-            if User.objects.filter(user_cart=recipe_id).exists():
+            if User.objects.filter(user_cart=recipe_id, id=user.id).exists():
                 return Response(
                     {'errors': 'Этот рецепт уже в списке покупок.'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -115,7 +115,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            if User.objects.filter(user_cart=recipe_id).exists():
+            if User.objects.filter(user_cart=recipe_id, id=user.id).exists():
                 user.user_cart.remove(recipe)
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response({'errors': 'Этого рецепта нет в списке покупок.'},
