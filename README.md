@@ -1,5 +1,7 @@
 ## Проект Продуктовый помощник
 
+![workflow](https://github.com/kelkrsru/foodgram-project-react/actions/workflows/main.yml/badge.svg)
+
 ### Сведения о проекте:
 
 Проект **Foodgram** призван облегчить ежедневное приготовление пищи благодаря 
@@ -68,16 +70,89 @@ python 3.9.2
 django 4.1
 djangorestframework 3.13.1
 django-filter 22.1
+postgres
+docker
+docker-compose
+nginx
 ```
 
 ### Как запустить проект:
 
-Раздел будет позже, после сборки проекта
+* Установите Docker на ваш сервер:
+```bash
+sudo apt install docker.io
+```
+
+* Установите Docker Compose на ваш сервер согласно официальной документации:
+[https://docs.docker.com/compose/install/linux/](https://docs.docker.com/compose/install/linux/)
+
+
+* Загрузите проект foodgram на свой сервер
+
+Параметры запуска описаны в файлах `docker-compose.yml` и `nginx.conf` которые 
+находятся в директории `infra/`.  
+При необходимости добавьте/измените адреса проекта в файле `nginx.conf`
+
+* Создайте в папке infra/ файл .env:
+```
+SECRET_KEY=<ваш секретный ключ>
+DEBUG=False
+ALLOWED_HOSTS=localhost <ваш адрес сервера>
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+DB_HOST=db
+DB_PORT=5432
+CSRF_TRUSTED_ORIGINS=http://*localhost http://*<ваш адрес сервера>
+```
+
+* Запустите docker compose:
+```bash
+docker-compose up -d --build
+```  
+  > После сборки появляются 3 контейнера:
+  > 1. контейнер базы данных **db**
+  > 2. контейнер приложения **backend**
+  > 3. контейнер web-сервера **nginx**
+  > 
+* Загрузите ингредиенты:
+```bash
+docker-compose exec backend python manage.py loadingredients
+```
+* Загрузите теги:
+```bash
+docker-compose exec backend python manage.py loadtags
+```
+* Создайте администратора:
+```bash
+docker-compose exec backend python manage.py createsuperuser
+```
+
+### Демо версия сайта
+
+Сайт доступен по ссылке:
+[http://foodgram.devkel.ru/](http://foodgram.devkel.ru/)
+
+### Суперпользователь
+
+Для доступа в административную часть демо сайта создан пользователь:
+```
+login: admin
+email: admin@mail.ru
+password: 2t22eacJaMFHWzz
+```
+Адрес административной части:
+[http://foodgram.devkel.ru/admin/](http://foodgram.devkel.ru/admin/)
+
 
 ### Описание API
 
-Описание API методов проекта доступно по адресу: http://localhost/api/docs/
+Описание API методов проекта доступно по адресу:
+[http://foodgram.devkel.ru/api/docs/](http://foodgram.devkel.ru/api/docs/)
 
-### Автор:
+### Авторы:
 
-Кириллов Евгений
+Кириллов Евгений - Backend and Deploy
+
+Яндекс.Практикум - Frontend
